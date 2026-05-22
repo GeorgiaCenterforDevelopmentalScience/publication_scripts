@@ -1,0 +1,332 @@
+TITLE: Your title goes here
+DATA: FILE = "final.dat";
+VARIABLE: 
+NAMES = subid ysex ppensity yrace familyid yage1 yage3 yage5 yage7 yage9 start1_min
+     start3_min start5_min start7_min start9_min samptime samptime3 samptime5
+     samptime7 FPDSY1 FPDSY3 FPDSY5 FPDSP21 FPDSP23 FPDSP25 FPDSP27 FPDSP29 INTPR1
+     INTPRT1 INTPR3 INTPRT3 INTPR5 INTPRT5 INTPR7 INTPRT7 INTPR9 INTPRT9 INTYR2
+     INTYRT2 INTYR3 INTYRT3 INTYR4 INTYRT4 INTYR5 INTYRT5 INTYR6 INTYRT6 INTYR7
+     INTYRT7 INTYR9 INTYRT9 DMEAN1 DMEAN3 DMEAN5 DMEAN7 DMEAN9 TMEAN1 TMEAN3 TMEAN5
+     TMEAN7 TMEAN9 EMEAN1 EMEAN3 EMEAN5 EMEAN7 EMEAN9 W_DMEAN1 W_DMEAN3 W_DMEAN5
+     W_DMEAN7 W_DMEAN9 W_TMEAN1 W_TMEAN3 W_TMEAN5 W_TMEAN7 W_TMEAN9 W_EMEAN1
+     W_EMEAN3 W_EMEAN5 W_EMEAN7 W_EMEAN9 R_EMEAN3 R_EMEAN5 R_EMEAN7 wake1_min
+     wake3_min wake5_min wake7_min wake9_min tsa1_min tsa3_min tsa5_min tsa7_min
+     siteid R_EMEAN1; 
+MISSING=.;
+
+
+
+USEVARIABLES ARE  
+W_TMEAN1 W_TMEAN3 W_TMEAN5 W_TMEAN7
+W_DMEAN1 W_DMEAN3 W_DMEAN5 W_DMEAN7
+tsa1_min tsa3_min tsa5_min tsa7_min
+samptime samptime3 samptime5 samptime7
+ R_EMEAN1 R_EMEAN3 R_EMEAN5 R_EMEAN7 
+  INTYR3 INTYR5 INTYR7 
+ FPDSP21 FPDSP23 FPDSP25 FPDSP27
+yage1 yage3 yage5  yage7;
+
+
+    CLUSTER IS familyid;
+  WEIGHT = ppensity;
+  STRATIFICATION = siteid; 
+  DEFINE:
+    familyid = familyid + 1;
+
+!W_TMEAN1 = W_TMEAN1/10 ;
+! W_TMEAN3 = W_TMEAN3/10 ;
+ ! W_TMEAN5  = W_TMEAN5/10 ;
+ ! W_TMEAN7 = W_TMEAN7/10 ;
+
+!W_DMEAN1 = W_DMEAN1/10 ;
+ ! W_DMEAN3 = W_DMEAN3/10 ;
+ ! W_DMEAN5  = W_DMEAN5/10 ;
+ !W_DMEAN7 = W_DMEAN7/10 ;
+
+
+   ANALYSIS:
+   TYPE=COMPLEX;
+  COVERAGE= 0;
+  MODEL = NOCOVARIANCES;
+  Estimator = MLR;
+   !BOOTSTRAP = 1000;
+  !BOOTSTRAP= 1000;
+
+  MODEL:
+
+! Specifying true scores 
+!! Puberty 
+  lp1 BY FPDSP21@1;
+  lp3 BY FPDSP23@1;
+  lp5 BY FPDSP25@1;
+  lp7 BY FPDSP27@1;
+
+
+!! Testosterone
+ lt1 BY W_TMEAN1@1;
+ lt3 BY W_TMEAN3@1;
+ lt5 BY W_TMEAN5@1;
+ lt7 BY W_TMEAN7@1;
+
+ !! DHEA
+ld1 BY W_DMEAN1@1;
+ld3 BY W_DMEAN3@1;
+ld5 BY W_DMEAN5@1;
+ld7 BY W_DMEAN7@1;
+
+
+! latent mean and variances 
+!! puberty 
+[lp1*];
+lp1;
+[lp3-lp7@0];
+lp3-lp7@0;
+
+!! Testosterone
+[lt1*];
+lt1;
+[lt3-lt7@0];
+lt3-lt7@0;
+
+!! DHEA
+[ld1*];
+ld1;
+[ld3-ld7@0];
+ld3-ld7@0;
+
+
+! setting intercepts to equal zero 
+!! puberty 
+[FPDSP21-FPDSP27@0];
+!! Testosterone
+[W_TMEAN1-W_TMEAN7@0];
+!! DHEA
+[W_DMEAN1-W_DMEAN7@0];
+
+! constrain variances
+!! puberty
+FPDSP21-FPDSP27 (sigma_p);
+!!testosterone
+W_TMEAN1-W_TMEAN7 (sigma_t);
+!! DHEA
+W_DMEAN1-W_DMEAN7 (sigma_d);
+
+! autoregressives among latent true scores 
+!! puberty 
+
+  lp3 ON lp1@1;
+  lp5 ON lp3@1;
+  lp7 ON lp5@1;
+!!testosterone 
+  lt3 ON lt1@1;
+  lt5 ON lt3@1;
+  lt7 ON lt5@1;
+!!dhea
+  ld3 ON ld1@1;
+  ld5 ON Ld3@1;
+  ld7 ON ld5@1;
+ 
+!defining latent change scores
+
+!! Puberty 
+  dp1_3 BY lp3@1;
+  dp3_5 BY lp5@1;
+  dp5_7 BY lp7@1;
+
+!! testosterone
+ dt1_3 BY lt3@1;
+ dt3_5 BY lt5@1;
+ dt5_7 BY lt7@1;
+
+!! DHEA
+dd1_3 BY ld3@1;
+dd3_5 BY ld5@1;
+dd5_7 BY ld7@1;
+
+!constraining latent change score mean and variances to zero
+!! Puberty
+
+ [dp1_3-dp5_7@0];
+  dp1_3-dp5_7@0;
+
+!! testosterone
+
+ [dt1_3-dt5_7@0];
+  dt1_3-dt5_7@0;
+
+!! DHEA
+
+[dd1_3-dd5_7@0];
+  dd1_3-dd5_7@0;
+
+! constant change component and mean, variance, covariance 
+
+!! Puberty 
+g2 BY dp1_3-dp5_7@1;
+g2;
+[g2];
+lp1 WITH g2;
+
+!! testosterone 
+j2 BY dt1_3-dt5_7@1;
+j2;
+[j2];
+lt1 WITH j2;
+!! DHEA
+k2 BY dd1_3-dd5_7@1;
+k2;
+[k2];
+ld1 WITH k2;
+
+
+! proportional change component 
+
+!! Puberty 
+ dp1_3 ON lp1 (pi_p) ;
+ dp3_5 ON lp3 (pi_p) ;
+ dp5_7 ON lp5 (pi_p) ;
+
+!! tesosterone 
+dt1_3 ON lt1 (pi_t) ;
+dt3_5 ON lt3 (pi_t) ;
+dt5_7 ON lt5 (pi_t);
+
+!! DHEA
+
+ dd1_3 ON ld1 (pi_d);
+ dd3_5 ON ld3 (pi_d);
+ dd5_7 ON ld5 (pi_d);
+
+!adding covariances between the initial change anc constant change latent variables
+!! puberty with testosterone 
+ lp1 WITH lt1;
+  lp1 WITH j2;
+  lt1 WITH g2;
+  j2 WITH g2;
+
+!! puberty with DHEA
+  lp1 WITH ld1 ;
+  lp1 WITH k2;
+  ld1 WITH g2;
+  g2 WITH k2;
+
+!! testosterone with DHEA
+
+ ld1 WITH lt1;
+ ld1 WITH j2;
+ lt1 WITH k2;
+ j2 WITH k2;
+
+! testosteone change on DHEA true 
+dt1_3 ON ld1 ;
+dt3_5 ON ld3 ;
+dt5_7 ON ld5 ;
+
+! testosteone change on puberty true 
+ !dt1_3 ON lp1 ;
+ ! dt3_5 ON lp3 ;
+ !dt5_7 ON lp5 ;
+
+
+! puberty change on DHEA true 
+
+dp1_3 ON ld1 ;
+dp3_5 ON ld3 ;
+dp5_7 ON ld5 ;
+
+! internalizing on testosterone change
+ INTYR3 ON dt1_3;
+ INTYR5 ON dt3_5 ;
+ INTYR7 ON dt5_7 ;
+
+ !internalizing on puberty change 
+INTYR3 ON dp1_3;
+ INTYR5 ON dp3_5  ;
+ INTYR7 ON dp5_7 ;
+
+
+
+ ! internalizing autoregressives 
+INTYR7 ON INTYR5;
+INTYR5 ON INTYR3;
+
+! control for age
+lp1 on yage1;
+lt1 on yage1 tsa1_min samptime;
+ld1 on yage1 tsa1_min samptime;
+
+lp3 on yage3;
+lt3 on yage3 tsa3_min samptime3;
+ld3 on yage3 tsa3_min samptime3;
+
+lp5 on yage5 ;
+lt5 on yage5 tsa5_min samptime5;
+ld5 on yage5 tsa5_min samptime5;
+
+lp7 on yage7 ;
+lt7 on yage7 tsa7_min samptime7; 
+ld7 on yage7 tsa7_min samptime7;
+
+yage1 WITH yage3 yage5 yage7;
+yage3 WITH  yage5 yage7;
+ yage5 WITH yage7;
+ 
+ INTYR3 ON yage3 (iy);
+INTYR5 ON yage5 (iy);
+INTYR7 ON yage7 (iy);
+
+
+! covariances 
+INTYR3 WITH W_DMEAN3 W_TMEAN3 FPDSP23;
+INTYR5 WITH W_DMEAN5 W_TMEAN5 FPDSP25;
+INTYR7 WITH W_DMEAN7 W_TMEAN7 FPDSP27;
+
+  W_TMEAN1 WITH W_DMEAN1 (sigma_TD);
+  W_TMEAN3 WITH W_DMEAN3 (sigma_TD);
+  W_TMEAN5 WITH W_DMEAN5 (sigma_TD);
+  W_TMEAN7 WITH W_DMEAN7 (sigma_TD);
+
+    
+  W_DMEAN1 WITH FPDSP21 (sigma_mr);
+  W_DMEAN3 WITH FPDSP23 (sigma_mr);
+  W_DMEAN5 WITH FPDSP25 (sigma_mr);
+  W_DMEAN7 WITH FPDSP27 (sigma_mr);
+
+   W_TMEAN1 WITH FPDSP21 (sigma_TP);
+  W_TMEAN3 WITH FPDSP23 (sigma_TP);
+  W_TMEAN5 WITH FPDSP25 (sigma_TP);
+  W_TMEAN7 WITH FPDSP27 (sigma_TP);
+
+tsa1_min WITH tsa3_min tsa5_min tsa7_min (sm);
+tsa3_min WITH tsa5_min tsa7_min (sm) ;
+tsa5_min WITH tsa7_min (sm) ;
+samptime WITH samptime3 samptime5 samptime7 (st);
+samptime3 WITH samptime5 samptime7 (st) ;
+samptime5 WITH samptime7 (st) ;
+
+tsa1_min WITH samptime (ss);
+tsa3_min WITH samptime3 (ss);
+tsa5_min WITH samptime5 (ss);
+tsa7_min WITH samptime7 (ss);
+
+R_EMEAN1 WITH R_EMEAN3 R_EMEAN5 R_EMEAN7 ;
+R_EMEAN3 WITH R_EMEAN5 R_EMEAN7 ;
+R_EMEAN5 WITH R_EMEAN7 ;
+
+
+
+
+INTYR3 ON R_EMEAN3  ;
+INTYR5 ON R_EMEAN5 ;
+INTYR7 ON R_EMEAN7 ;
+
+DP1_3 ON R_EMEAN1;
+DP3_5 ON R_EMEAN3;
+DP5_7 ON R_EMEAN5;
+
+R_EMEAN1 WITH W_DMEAN1 W_TMEAN1 FPDSP21;
+R_EMEAN3 WITH  W_DMEAN3 W_TMEAN3 FPDSP23;
+R_EMEAN5 WITH  W_DMEAN5 W_TMEAN5 FPDSP25;
+R_EMEAN7 WITH  W_DMEAN7 W_TMEAN7 FPDSP27;
+OUTPUT: STAND MODINDICES CINTERVAL; 
+
